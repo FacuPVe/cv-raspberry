@@ -79,10 +79,28 @@ function App() {
 
   const fetchCVData = async () => {
     try {
-      const response = await fetch(API_URL);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+      const response = await fetch(API_URL, {
+        signal: controller.signal,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      });
+
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error('Error al obtener los datos del CV');
+        throw new Error(`Error al obtener los datos del CV: ${response.status} ${response.statusText}`);
       }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('El servidor no devolvió JSON válido');
+      }
+
       const data = await response.json();
       
       setCvData(prevData => ({
@@ -101,6 +119,18 @@ function App() {
 
     } catch (err) {
       console.error('Error al obtener datos:', err);
+      let errorMessage = 'No se pudieron cargar los datos del CV.';
+      
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          errorMessage = 'La conexión al servidor ha expirado. Por favor, verifica que el servidor esté funcionando.';
+        } else if (err.message.includes('Failed to fetch')) {
+          errorMessage = 'No se pudo conectar al servidor. Por favor, verifica que el servidor esté funcionando y accesible.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
       setCvData(prevData => ({
         ...prevData,
         name: '',
@@ -114,7 +144,7 @@ function App() {
       }));
 
       setErrors({
-        name: 'No se pudieron cargar los datos del CV.',
+        name: errorMessage,
         experience: 'No se pudieron cargar los datos de experiencia.',
         skills: 'No se pudieron cargar los datos de habilidades.',
         projects: 'No se pudieron cargar los datos de proyectos.'
