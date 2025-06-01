@@ -504,7 +504,7 @@ function App() {
               <p className="text-sm">
                 © {new Date().getFullYear()} {cvData.name}
                 <br />
-                Todos los derechos reservados
+                Todos los derechos reservados prueba prueba
               </p>
             </div>
             <div className="flex space-x-4">
