@@ -80,7 +80,7 @@ function App() {
   const fetchCVData = async () => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
 
       const response = await fetch(API_URL, {
         signal: controller.signal,
@@ -96,12 +96,18 @@ function App() {
         throw new Error(`Error al obtener los datos del CV: ${response.status} ${response.statusText}`);
       }
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('El servidor no devolvió JSON válido');
-      }
+      // Obtener el texto de la respuesta primero para depuración
+      const responseText = await response.text();
+      console.log('Respuesta del servidor:', responseText);
 
-      const data = await response.json();
+      // Intentar parsear el texto como JSON
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Error al parsear JSON:', parseError);
+        throw new Error('La respuesta del servidor no es un JSON válido');
+      }
       
       setCvData(prevData => ({
         ...prevData,
